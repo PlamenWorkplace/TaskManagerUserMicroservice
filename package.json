@@ -1,0 +1,15 @@
+{
+  "name": "usermicroservice",
+  "version": "1.0.0",
+  "description": "microservice for authenticating users",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "amqplib": "^0.3.0"
+  }
+}

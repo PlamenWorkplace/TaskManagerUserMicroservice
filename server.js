@@ -1,3 +1,4 @@
-import RabbitMQServer from "./src/rabbitmq/Server.js";
+import Broker from "./src/rabbitmq/Broker.js";
 
-RabbitMQServer.initialize();
+Broker.initialize()
+;

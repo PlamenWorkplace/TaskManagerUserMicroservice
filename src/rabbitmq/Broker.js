@@ -1,6 +1,6 @@
 import {connect} from "amqplib";
-import config from "../rabbitmq/config.js";
 import MessageHandler from "../service/MessageHandler.js";
+import config from "./Config.js";
 
 class Broker {
 
@@ -51,7 +51,7 @@ class Broker {
                     await MessageHandler.signup(command.payload, correlationId);
                 }
                 else {
-                    await MessageHandler.error("Invalid Command!", correlationId);
+                    await this.produceMessage("0", correlationId);
                 }
                 },
             { noAck: true }

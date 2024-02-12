@@ -5,47 +5,45 @@ import bcrypt from "bcrypt";
 export default class MessageHandler {
 
     static async login(payload, correlationId) {
-        const userRef = db.collection("Users").doc(payload.email);
-        let doc;
         try {
-            await db.runTransaction(async (t) => doc = await t.get(userRef))
+            const doc = await this.getDocByEmail(payload.email);
             if (!doc.exists) {
-                throw "Document doesn't exist!";
+                throw "User doesn't exist!";
             }
+            bcrypt.compare(payload.password, doc.data().password).then(async result => {
+                if (result) {
+                    await Broker.produceMessage("1", correlationId);
+                } else {
+                    await Broker.produceMessage("0", correlationId);
+                }
+            });
         } catch (e) {
-            console.log('Transaction error: ', e.message);
+            console.error("MessageHandler.login(): ", e);
             await Broker.produceMessage("0", correlationId);
-            return;
         }
-
-        bcrypt.compare(payload.password, doc.data().password).then(async result => {
-            if (result) {
-                await Broker.produceMessage("1", correlationId);
-            } else {
-                await Broker.produceMessage("0", correlationId);
-            }
-        }).catch(e => {
-            console.error("Error comparing passwords:", e.message);
-        });
     }
 
     static async signup(payload, correlationId) {
-        const userRef = db.collection("Users").doc(payload.email);
-        let doc;
         try {
-            await db.runTransaction(async (t) => doc = await t.get(userRef))
+            const doc = await this.getDocByEmail(payload.email);
             if (doc.exists) {
-                throw "Document already exists!"
+                throw "User already exists!"
             }
+            payload.password = await bcrypt.hash(payload.password, 10);
+            payload.tasks = [];
+            await db.collection("Users").doc(payload.email).set(payload);
+            await Broker.produceMessage("1", correlationId);
         } catch (e) {
-            console.log('Transaction error: ', e.message);
+            console.error("MessageHandler.signup(): ", e);
             await Broker.produceMessage("0", correlationId);
-            return;
         }
+    }
 
-        payload.password = await bcrypt.hash(payload.password, 10);
-        await db.collection("Users").doc(payload.email).set(payload);
-        await Broker.produceMessage("1", correlationId);
+    static async getDocByEmail(email) {
+        const userRef = db.collection("Users").doc(email);
+        let doc;
+        await db.runTransaction(async (t) => doc = await t.get(userRef))
+        return doc;
     }
 
 }

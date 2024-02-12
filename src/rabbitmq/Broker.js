@@ -20,17 +20,17 @@ class Broker {
             this.producerChannel = await connection.createChannel();
             this.consumerChannel = await connection.createChannel();
 
-            await this.consumerChannel.assertQueue(config.queues.userRequestQueue, {exclusive: true})
+            await this.consumerChannel.assertQueue(config.queues.requestQueue, {exclusive: true})
 
             await this.startConsumer();
-        } catch(error) {
-            console.log("Error: ", error)
+        } catch(e) {
+            console.error("Broker.initialize(): ", e)
         }
     }
 
     async produceMessage(data, correlationId) {
         this.producerChannel.sendToQueue(
-            config.queues.userResponseQueue,
+            config.queues.responseQueue,
             Buffer.from(JSON.stringify(data)),
             {
                 correlationId: correlationId.toString()
@@ -40,14 +40,14 @@ class Broker {
 
     async startConsumer() {
         this.consumerChannel.consume(
-            config.queues.userRequestQueue,
+            config.queues.requestQueue,
             async message => {
                 const correlationId = message.properties.correlationId;
                 const command = JSON.parse(message.content.toString());
-                if (command.name === 'login') {
+                if (command.name === 'LOGIN') {
                     await MessageHandler.login(command.payload, correlationId);
                 }
-                else if (command.name === 'signup') {
+                else if (command.name === 'SIGNUP') {
                     await MessageHandler.signup(command.payload, correlationId);
                 }
                 else {
